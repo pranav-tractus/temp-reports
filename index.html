@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>temp-reports — Reports Index</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:900px;margin:32px auto;padding:0 16px;color:#111}
+    header{display:flex;align-items:center;gap:16px}
+    h1{margin:0;font-size:1.6rem}
+    .note{color:#555;margin-top:6px}
+    ul{padding-left:1.2rem}
+    .dir{font-weight:600}
+    .meta{color:#666;font-size:.9rem}
+    button{margin-left:8px}
+    footer{margin-top:40px;color:#666;font-size:.9rem}
+    .loading{color:#888}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>temp-reports — Reports Index</h1>
+      <div class="note">This page lists the reports stored in this repository and links to them for easy browsing.</div>
+    </div>
+  </header>
+
+  <main>
+    <p class="loading" id="status">Loading report list…</p>
+    <div id="browser"></div>
+  </main>
+
+  <footer>
+    <p class="meta">Notes: Links point to the GitHub Pages URL (when published) and to the repository file page as a fallback.</p>
+  </footer>
+
+  <script>
+    (function(){
+      const owner = 'pranav-tractus';
+      const repo = 'temp-reports';
+      const branch = 'main';
+      const apiBase = `https://api.github.com/repos/${owner}/${repo}/contents`;
+      const pagesBase = `https://${owner}.github.io/${repo}`;
+      const browser = document.getElementById('browser');
+      const status = document.getElementById('status');
+
+      async function fetchDir(path = ''){
+        status.textContent = 'Loading ' + (path || 'root') + '…';
+        try{
+          const url = apiBase + (path ? '/' + encodeURIComponent(path) : '') + `?ref=${branch}`;
+          const res = await fetch(url);
+          if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
+          const items = await res.json();
+          renderList(items, path);
+          status.textContent = '';
+        }catch(err){
+          status.textContent = 'Could not load repository contents: ' + err.message;
+          console.error(err);
+        }
+      }
+
+      function renderList(items, currentPath){
+        browser.innerHTML = '';
+        const back = document.createElement('div');
+        if(currentPath){
+          const upPath = currentPath.split('/').slice(0,-1).join('/');
+          const upBtn = document.createElement('button');
+          upBtn.textContent = 'Up';
+          upBtn.onclick = () => fetchDir(upPath);
+          back.appendChild(upBtn);
+          const span = document.createElement('span');
+          span.style.marginLeft = '8px';
+          span.textContent = currentPath;
+          back.appendChild(span);
+        }
+        browser.appendChild(back);
+
+        const ul = document.createElement('ul');
+        // directories first
+        items.sort((a,b)=> (a.type===b.type)? a.name.localeCompare(b.name) : (a.type==='dir'? -1:1));
+        for(const item of items){
+          const li = document.createElement('li');
+          if(item.type === 'dir'){
+            const d = document.createElement('span'); d.textContent = '📁 ' + item.name; d.className='dir';
+            li.appendChild(d);
+            const btn = document.createElement('button'); btn.textContent = 'Open'; btn.onclick = ()=> fetchDir(item.path);
+            li.appendChild(btn);
+          } else {
+            // file
+            const ext = item.name.split('.').pop().toLowerCase();
+            const link = document.createElement('a');
+            // prefer pages URL (works after site is published), fallback to GitHub file view
+            link.href = `${pagesBase}/${item.path}`;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.textContent = item.name;
+            li.appendChild(document.createTextNode('📄 '));
+            li.appendChild(link);
+
+            li.appendChild(document.createTextNode(' '));
+            const fallback = document.createElement('a');
+            fallback.href = item.html_url; // GitHub file page
+            fallback.textContent = '(repo)';
+            fallback.target = '_blank';
+            fallback.rel = 'noopener';
+            fallback.style.marginLeft = '8px';
+            li.appendChild(fallback);
+
+            // show size
+            const size = document.createElement('span');
+            size.className='meta';
+            size.textContent = ' — ' + Math.round(item.size/1024*100)/100 + ' KB';
+            li.appendChild(size);
+          }
+          ul.appendChild(li);
+        }
+        browser.appendChild(ul);
+      }
+
+      // initial load
+      fetchDir('');
+    })();
+  </script>
+</body>
+</html>
