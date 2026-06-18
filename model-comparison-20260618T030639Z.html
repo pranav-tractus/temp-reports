@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Template Handler · Model Benchmark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,700;1,6..72,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #f4f1ea;
+      --paper-2: #ebe6dc;
+      --ink: #1a1814;
+      --ink-soft: #4a463c;
+      --ink-faint: #8a8478;
+      --rule: #d4cec2;
+      --accent: #c43b2a;
+      --accent-soft: #f0ddd9;
+      --blue: #2a5f8f;
+      --blue-soft: #dce8f2;
+      --green: #2d6a4f;
+      --green-soft: #d8ebe2;
+      --agri: #4a7c59;
+      --metal: #5c4d8a;
+      --font-serif: "Newsreader", Georgia, serif;
+      --font-mono: "IBM Plex Mono", monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--ink);
+      background: var(--paper);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.45;
+      background-image:
+        linear-gradient(var(--rule) 1px, transparent 1px),
+        linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    }
+
+    .wrap {
+      position: relative;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 2.5rem 1.75rem 5rem;
+    }
+
+    .masthead {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2rem;
+      padding-bottom: 2rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid var(--ink);
+      animation: rise 0.7s ease both;
+    }
+
+    .kicker {
+      font-size: 10px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+      font-weight: 500;
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+      max-width: 14ch;
+    }
+
+    .lede {
+      margin-top: 1rem;
+      color: var(--ink-soft);
+      max-width: 48ch;
+      font-size: 12px;
+    }
+
+    .meta-block {
+      text-align: right;
+      font-size: 11px;
+      color: var(--ink-faint);
+      align-self: end;
+    }
+
+    .meta-block dt {
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-top: 0.6rem;
+    }
+
+    .meta-block dd { margin-top: 0.15rem; }
+
+    .callout {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 2.5rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.5rem;
+      align-items: center;
+      animation: rise 0.7s 0.08s ease both;
+    }
+
+    .callout-score {
+      font-family: var(--font-serif);
+      font-size: 3.2rem;
+      font-weight: 700;
+      line-height: 1;
+      color: #fff;
+    }
+
+    .callout-score small {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-top: 0.35rem;
+    }
+
+    .callout h2 {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-bottom: 0.4rem;
+    }
+
+    .callout p { color: #c8c4bc; font-size: 11px; max-width: 58ch; }
+
+    .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+
+    .tag {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.5rem;
+      border: 1px solid #555;
+      color: #bbb;
+    }
+
+    .tag.good { border-color: var(--green); color: #8fd4b0; }
+
+    .section-label {
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .model-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .model-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      padding: 1.25rem;
+      animation: rise 0.6s ease both;
+      position: relative;
+    }
+
+    .model-card.lead {
+      border-color: var(--ink);
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+
+    .model-card.lead::after {
+      content: "LEAD";
+      position: absolute;
+      top: 0; right: 0;
+      background: var(--accent);
+      color: #fff;
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      padding: 0.3rem 0.55rem;
+    }
+
+    .model-card h3 {
+      font-family: var(--font-serif);
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+
+    .model-id { font-size: 10px; color: var(--ink-faint); margin: 0.2rem 0 1rem; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+    }
+
+    .stat { border-top: 1px solid var(--rule); padding-top: 0.6rem; }
+    .stat-k { font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
+    .stat-v { font-family: var(--font-serif); font-size: 1.35rem; margin-top: 0.2rem; }
+
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .chart-panel {
+      background: #fff;
+      border: 1px solid var(--rule);
+      padding: 1.25rem;
+      animation: rise 0.6s ease both;
+    }
+
+    .chart-panel h3 {
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 1rem;
+    }
+
+    .bar-group { margin-bottom: 0.85rem; }
+    .bar-case {
+      font-family: var(--font-serif);
+      font-size: 13px;
+      margin-bottom: 0.35rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .bar-case span { font-family: var(--font-mono); font-size: 10px; color: var(--ink-faint); }
+
+    .bar-line {
+      display: grid;
+      grid-template-columns: 52px 1fr 44px;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.25rem;
+      font-size: 10px;
+      color: var(--ink-faint);
+    }
+
+    .bar-track { height: 10px; background: var(--paper-2); overflow: hidden; }
+    .bar-fill { height: 100%; width: 0; transition: width 1s cubic-bezier(0.22,1,0.36,1); }
+    .bar-fill.m41 { background: var(--accent); }
+    .bar-fill.m55 { background: var(--blue); }
+
+    .cases {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .case-card {
+      background: #fff;
+      border: 1px solid var(--rule);
+      animation: rise 0.6s ease both;
+    }
+
+    .case-top {
+      padding: 1rem 1.15rem;
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .case-name {
+      font-family: var(--font-serif);
+      font-size: 1.2rem;
+    }
+
+    .pill {
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.45rem;
+      margin-top: 0.3rem;
+      display: inline-block;
+    }
+
+    .pill.ag { color: var(--agri); border: 1px solid #b8d4be; }
+    .pill.mt { color: var(--metal); border: 1px solid #c4bdd8; }
+
+    .delta {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .delta.win41 { background: var(--accent-soft); color: var(--accent); }
+    .delta.win55 { background: var(--blue-soft); color: var(--blue); }
+    .delta.tie { background: var(--paper-2); color: var(--ink-soft); }
+
+    .case-body { padding: 1rem 1.15rem 1.15rem; }
+
+    .dual {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .dual-col h4 {
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+
+    .dual-col.m41 h4 { color: var(--accent); }
+    .dual-col.m55 h4 { color: var(--blue); }
+
+    .score-big {
+      font-family: var(--font-serif);
+      font-size: 1.8rem;
+      line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+
+    .sub-stats { font-size: 10px; color: var(--ink-faint); line-height: 1.7; }
+
+    .metric-rows { display: flex; flex-direction: column; gap: 0.3rem; }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: 72px 1fr 38px;
+      gap: 0.4rem;
+      align-items: center;
+      font-size: 9px;
+      color: var(--ink-faint);
+    }
+
+    .metric-track { height: 3px; background: var(--paper-2); display: flex; flex-direction: column; gap: 2px; }
+    .metric-fill { height: 3px; width: 0; transition: width 0.9s ease; }
+    .metric-fill.m41 { background: var(--accent); }
+    .metric-fill.m55 { background: var(--blue); }
+
+    .toggle {
+      width: 100%;
+      margin-top: 0.6rem;
+      padding: 0.45rem 0.6rem;
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      text-align: left;
+      cursor: pointer;
+      color: var(--ink-soft);
+    }
+
+    .toggle:hover { border-color: var(--ink); color: var(--ink); }
+
+    .detail {
+      display: none;
+      margin-top: 0.5rem;
+      padding: 0.65rem;
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      font-size: 9px;
+      color: var(--ink-soft);
+      max-height: 180px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+
+    .detail.open { display: block; }
+
+    .table-panel {
+      background: #fff;
+      border: 1px solid var(--rule);
+      overflow-x: auto;
+      margin-bottom: 2.5rem;
+      animation: rise 0.6s ease both;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    thead { background: var(--paper-2); border-bottom: 1px solid var(--rule); }
+    th {
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      padding: 0.7rem 0.85rem;
+      text-align: left;
+      white-space: nowrap;
+    }
+    td {
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid var(--paper-2);
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+    tr:hover td { background: #faf8f4; }
+    td strong { color: var(--ink); }
+    td.best { color: var(--accent); font-weight: 500; }
+
+    .method {
+      background: #fff;
+      border: 1px solid var(--rule);
+      padding: 1.5rem;
+      animation: rise 0.6s ease both;
+    }
+
+    .method h2 {
+      font-family: var(--font-serif);
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+
+    .method-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+
+    .method-item h3 { font-size: 11px; margin-bottom: 0.35rem; }
+    .method-item p { font-size: 10px; color: var(--ink-soft); line-height: 1.65; }
+
+    .weights {
+      display: flex;
+      height: 5px;
+      gap: 2px;
+      margin-top: 0.6rem;
+    }
+
+  footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--rule);
+      font-size: 9px;
+      color: var(--ink-faint);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 900px) {
+      .model-row, .cases, .method-grid { grid-template-columns: 1fr; }
+      .charts { grid-template-columns: 1fr; }
+      .masthead { grid-template-columns: 1fr; }
+      .meta-block { text-align: left; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .callout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <div>
+        <div class="kicker">Tract · Template Handler</div>
+        <h1>Model Benchmark Report</h1>
+        <p class="lede">Unbiased comparison of GPT-4.1 and GPT-5.5 for PDF-to-template JSON extraction. Sections matched by structure, not golden index order.</p>
+      </div>
+      <dl class="meta-block" id="meta"></dl>
+    </header>
+
+    <section class="callout" id="verdict"></section>
+
+    <div class="section-label">Model summary</div>
+    <div class="model-row" id="models"></div>
+
+    <div class="section-label">Score, latency &amp; tokens</div>
+    <div class="charts" id="charts"></div>
+
+    <div class="section-label">Head-to-head</div>
+    <div class="table-panel" style="margin-bottom:2.5rem">
+      <table>
+        <thead>
+          <tr>
+            <th>Case</th><th>Category</th><th>gpt-4.1</th><th>gpt-5.5</th><th>Delta</th>
+            <th>4.1 Legacy</th><th>5.5 Legacy</th><th>4.1 Time</th><th>5.5 Time</th><th>Token Δ</th>
+          </tr>
+        </thead>
+        <tbody id="h2h-body"></tbody>
+      </table>
+    </div>
+
+    <div class="section-label">Per-case breakdown</div>
+    <div class="cases" id="cases"></div>
+
+    <div class="section-label">Full results</div>
+    <div class="table-panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Case</th><th>Category</th><th>Model</th><th>Score</th><th>Legacy</th>
+            <th>Layout</th><th>Match</th><th>Fields</th><th>Vars</th><th>Cols</th>
+            <th>Sections</th><th>Total</th><th>LLM</th><th>In</th><th>Out</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+
+    <section class="method">
+      <h2>Scoring methodology</h2>
+      <div class="method-grid">
+        <div class="method-item">
+          <h3>Section matching</h3>
+          <p>Greedy best-match pairing by layout_type, then fields, column headers (set F1), and Jinja variables — not index position.</p>
+        </div>
+        <div class="method-item">
+          <h3>Overall weights</h3>
+          <p>Metadata 5% · layout multiset 15% · section match 30% · fields F1 25% · variables F1 15% · column headers 5% · section count 5%.</p>
+          <div class="weights" id="weights"></div>
+        </div>
+        <div class="method-item">
+          <h3>Fairness rules</h3>
+          <p>numbered_list ≡ ordered_list. grid_position ignored (post-processing). Content scored via Jinja variable overlap. temperature=0 for gpt-4.1; gpt-5.5 uses model default. Textract cached per PDF.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span>template_scoring.py · model_benchmark.py</span>
+      <span id="footer-ts"></span>
+    </footer>
+  </div>
+
+  <script>
+    const DATA = {"generated": "2026-06-18 03:06:39 UTC", "models": [{"label": "gpt-4.1", "id": "gpt-4.1-2025-04-14"}, {"label": "gpt-5.5", "id": "gpt-5.5-2026-04-23"}], "cases": [{"name": "aglipids", "category": "agriculture", "golden": "aglipids.json", "pdf": "aglipids.pdf"}, {"name": "giiava", "category": "agriculture", "golden": "giiava.json", "pdf": "giiava.pdf"}, {"name": "annual_omsa", "category": "metal", "golden": "annual_omsa.json", "pdf": "annual_omsa.pdf"}, {"name": "omm", "category": "metal", "golden": "omm.json", "pdf": "omm.pdf"}], "results": [{"model_label": "gpt-4.1", "model_id": "gpt-4.1-2025-04-14", "case_name": "aglipids", "template_category": "agriculture", "success": true, "elapsed_seconds": 5.71, "textract_seconds": 0.0, "llm_seconds": 5.71, "usage": {"input_tokens": 5831, "output_tokens": 1099, "total_tokens": 6930}, "accuracy": {"overall_score": 0.9428668018931712, "legacy_index_aligned_score": 0.8708333333333333, "metadata_score": 1.0, "layout_multiset_score": 1.0, "section_match_score": 0.8823529411764706, "fields_f1": 0.9333333333333333, "variables_f1": 0.9655172413793104, "column_headers_f1": 1.0, "section_count_score": 1.0, "section_count_expected": 8, "section_count_actual": 8, "matched_sections": 8, "section_mismatches": [{"expected_index": 3, "actual_index": 3, "layout_type": "document_metadata", "match_score": 0.706, "fields": {"expected": ["customer_po_no", "po_ref_no"], "actual": ["customer_po_no", "po_date", "po_ref_no"]}, "format": {"expected": "paragraph", "actual": "formattype.paragraph"}}]}, "error": null}, {"model_label": "gpt-5.5", "model_id": "gpt-5.5-2026-04-23", "case_name": "aglipids", "template_category": "agriculture", "success": true, "elapsed_seconds": 18.18, "textract_seconds": 0.0, "llm_seconds": 18.18, "usage": {"input_tokens": 6081, "output_tokens": 1451, "total_tokens": 7532}, "accuracy": {"overall_score": 0.8539153141320324, "legacy_index_aligned_score": 0.022222222222222223, "metadata_score": 1.0, "layout_multiset_score": 0.9411764705882353, "section_match_score": 0.8823529411764706, "fields_f1": 0.7368421052631579, "variables_f1": 0.8484848484848484, "column_headers_f1": 0.8421052631578948, "section_count_score": 0.8888888888888888, "section_count_expected": 8, "section_count_actual": 9, "matched_sections": 8, "section_mismatches": [{"expected_index": 3, "actual_index": 0, "layout_type": "document_metadata", "match_score": 0.706, "fields": {"expected": ["customer_po_no", "po_ref_no"], "actual": ["customer_po_no", "po_date", "po_ref_no"]}, "format": {"expected": "paragraph", "actual": "formattype.paragraph"}}, {"actual_index": 4, "reason": "extra_actual_section", "layout_type": "order_details"}]}, "error": null}, {"model_label": "gpt-4.1", "model_id": "gpt-4.1-2025-04-14", "case_name": "giiava", "template_category": "agriculture", "success": true, "elapsed_seconds": 4.5, "textract_seconds": 0.0, "llm_seconds": 4.5, "usage": {"input_tokens": 5839, "output_tokens": 787, "total_tokens": 6626}, "accuracy": {"overall_score": 0.6603281216332687, "legacy_index_aligned_score": 0.18333333333333335, "metadata_score": 1.0, "layout_multiset_score": 0.8571428571428571, "section_match_score": 0.6902573529411765, "fields_f1": 0.33333333333333337, "variables_f1": 0.6923076923076924, "column_headers_f1": 1.0, "section_count_score": 0.75, "section_count_expected": 8, "section_count_actual": 6, "matched_sections": 6, "section_mismatches": [{"expected_index": 4, "actual_index": 2, "layout_type": "line_items", "match_score": 0.816, "format": {"expected": "table", "actual": "formattype.table"}}, {"expected_index": 2, "reason": "no_matching_actual_section", "layout_type": "document_metadata"}, {"expected_index": 3, "reason": "no_matching_actual_section", "layout_type": "vendor_info"}]}, "error": null}, {"model_label": "gpt-5.5", "model_id": "gpt-5.5-2026-04-23", "case_name": "giiava", "template_category": "agriculture", "success": true, "elapsed_seconds": 19.15, "textract_seconds": 0.0, "llm_seconds": 19.15, "usage": {"input_tokens": 6089, "output_tokens": 1382, "total_tokens": 7471}, "accuracy": {"overall_score": 0.9227915376676987, "legacy_index_aligned_score": 0.21333333333333332, "metadata_score": 1.0, "layout_multiset_score": 0.888888888888889, "section_match_score": 0.857843137254902, "fields_f1": 1.0, "variables_f1": 1.0, "column_headers_f1": 0.8421052631578948, "section_count_score": 0.8, "section_count_expected": 8, "section_count_actual": 10, "matched_sections": 8, "section_mismatches": [{"expected_index": 3, "actual_index": 4, "layout_type": "vendor_info", "match_score": 0.392, "fields": {"expected": ["billing_address", "delivery_terms", "do_date", "payment_date", "shipping_address", "shipping_method", "vendor_name"], "actual": ["billing_address", "shipping_address"]}, "format": {"expected": "paragraph", "actual": "formattype.paragraph"}}, {"actual_index": 0, "reason": "extra_actual_section", "layout_type": "document_header"}, {"actual_index": 5, "reason": "extra_actual_section", "layout_type": "order_details"}]}, "error": null}, {"model_label": "gpt-4.1", "model_id": "gpt-4.1-2025-04-14", "case_name": "annual_omsa", "template_category": "metal", "success": true, "elapsed_seconds": 11.55, "textract_seconds": 0.0, "llm_seconds": 11.55, "usage": {"input_tokens": 7381, "output_tokens": 2194, "total_tokens": 9575}, "accuracy": {"overall_score": 0.9232444122323015, "legacy_index_aligned_score": 0.3016666666666667, "metadata_score": 1.0, "layout_multiset_score": 0.9189189189189189, "section_match_score": 0.8096885813148789, "fields_f1": 1.0, "variables_f1": 1.0, "column_headers_f1": 1.0, "section_count_score": 0.85, "section_count_expected": 17, "section_count_actual": 20, "matched_sections": 16, "section_mismatches": [{"expected_index": 9, "actual_index": 12, "layout_type": "order_details", "match_score": 0.647, "fields": {"expected": ["origin", "packing_details"], "actual": ["packing_details"]}, "format": {"expected": "ordered_list", "actual": "formattype.ordered_list"}, "column_headers": {"expected": ["origin", "packing_details"], "actual": ["packing_details"]}}, {"expected_index": 5, "actual_index": 7, "layout_type": "order_details", "match_score": 0.529, "fields": {"expected": ["description", "quantity", "unit_price"], "actual": ["unit_price"]}, "format": {"expected": "ordered_list", "actual": "formattype.ordered_list"}, "column_headers": {"expected": ["description", "quantity", "unit_price"], "actual": ["unit_price"]}}, {"expected_index": 4, "reason": "no_matching_actual_section", "layout_type": "paragraph"}, {"actual_index": 4, "reason": "extra_actual_section", "layout_type": "paragraph"}, {"actual_index": 5, "reason": "extra_actual_section", "layout_type": "order_details"}, {"actual_index": 6, "reason": "extra_actual_section", "layout_type": "order_details"}, {"actual_index": 11, "reason": "extra_actual_section", "layout_type": "order_details"}]}, "error": null}, {"model_label": "gpt-5.5", "model_id": "gpt-5.5-2026-04-23", "case_name": "annual_omsa", "template_category": "metal", "success": true, "elapsed_seconds": 23.95, "textract_seconds": 0.0, "llm_seconds": 23.95, "usage": {"input_tokens": 7631, "output_tokens": 2002, "total_tokens": 9633}, "accuracy": {"overall_score": 0.9031292909320592, "legacy_index_aligned_score": 0.24444444444444446, "metadata_score": 1.0, "layout_multiset_score": 0.8571428571428571, "section_match_score": 0.7577854671280277, "fields_f1": 1.0, "variables_f1": 1.0, "column_headers_f1": 1.0, "section_count_score": 0.9444444444444444, "section_count_expected": 17, "section_count_actual": 18, "matched_sections": 15, "section_mismatches": [{"expected_index": 9, "actual_index": 10, "layout_type": "order_details", "match_score": 0.647, "fields": {"expected": ["origin", "packing_details"], "actual": ["packing_details"]}, "format": {"expected": "ordered_list", "actual": "formattype.ordered_list"}, "column_headers": {"expected": ["origin", "packing_details"], "actual": ["packing_details"]}}, {"expected_index": 5, "actual_index": 7, "layout_type": "order_details", "match_score": 0.529, "fields": {"expected": ["description", "quantity", "unit_price"], "actual": ["unit_price"]}, "format": {"expected": "ordered_list", "actual": "formattype.ordered_list"}, "column_headers": {"expected": ["description", "quantity", "unit_price"], "actual": ["unit_price"]}}, {"expected_index": 6, "reason": "no_matching_actual_section", "layout_type": "paragraph"}, {"expected_index": 8, "reason": "no_matching_actual_section", "layout_type": "paragraph"}, {"actual_index": 5, "reason": "extra_actual_section", "layout_type": "order_details"}, {"actual_index": 6, "reason": "extra_actual_section", "layout_type": "order_details"}, {"actual_index": 9, "reason": "extra_actual_section", "layout_type": "order_details"}]}, "error": null}, {"model_label": "gpt-4.1", "model_id": "gpt-4.1-2025-04-14", "case_name": "omm", "template_category": "metal", "success": true, "elapsed_seconds": 12.95, "textract_seconds": 0.0, "llm_seconds": 12.95, "usage": {"input_tokens": 7404, "output_tokens": 1987, "total_tokens": 9391}, "accuracy": {"overall_score": 0.9505494505494505, "legacy_index_aligned_score": 0.39761904761904765, "metadata_score": 1.0, "layout_multiset_score": 0.923076923076923, "section_match_score": 0.8974358974358974, "fields_f1": 1.0, "variables_f1": 1.0, "column_headers_f1": 1.0, "section_count_score": 0.8571428571428571, "section_count_expected": 12, "section_count_actual": 14, "matched_sections": 12, "section_mismatches": [{"expected_index": 5, "actual_index": 5, "layout_type": "order_details", "match_score": 0.828, "fields": {"expected": ["description", "origin", "packing_details", "quantity", "shipment_date", "specifications", "unit_price"], "actual": ["description", "origin", "packing_details", "quantity", "shipment_date", "unit_price"]}, "format": {"expected": "ordered_list", "actual": "formattype.ordered_list"}, "column_headers": {"expected": ["description", "origin", "packing_details", "quantity", "shipment_date", "specifications", "unit_price"], "actual": ["description", "origin", "packing_details", "quantity", "shipment_date", "unit_price"]}}, {"actual_index": 6, "reason": "extra_actual_section", "layout_type": "order_details"}, {"actual_index": 12, "reason": "extra_actual_section", "layout_type": "footer"}]}, "error": null}, {"model_label": "gpt-5.5", "model_id": "gpt-5.5-2026-04-23", "case_name": "omm", "template_category": "metal", "success": true, "elapsed_seconds": 24.62, "textract_seconds": 0.0, "llm_seconds": 24.62, "usage": {"input_tokens": 7654, "output_tokens": 2211, "total_tokens": 9865}, "accuracy": {"overall_score": 0.9050609208029562, "legacy_index_aligned_score": 0.20877192982456141, "metadata_score": 1.0, "layout_multiset_score": 0.7741935483870968, "section_match_score": 0.8578431372549019, "fields_f1": 1.0, "variables_f1": 1.0, "column_headers_f1": 1.0, "section_count_score": 0.631578947368421, "section_count_expected": 12, "section_count_actual": 19, "matched_sections": 12, "section_mismatches": [{"expected_index": 5, "actual_index": 11, "layout_type": "order_details", "match_score": 0.353, "fields": {"expected": ["description", "origin", "packing_details", "quantity", "shipment_date", "specifications", "unit_price"], "actual": ["specifications"]}, "format": {"expected": "ordered_list", "actual": "formattype.ordered_list"}, "column_headers": {"expected": ["description", "origin", "packing_details", "quantity", "shipment_date", "specifications", "unit_price"], "actual": ["specifications"]}}, {"actual_index": 5, "reason": "extra_actual_section", "layout_type": "order_details"}, {"actual_index": 6, "reason": "extra_actual_section", "layout_type": "order_details"}, {"actual_index": 7, "reason": "extra_actual_section", "layout_type": "order_details"}, {"actual_index": 8, "reason": "extra_actual_section", "layout_type": "order_details"}, {"actual_index": 9, "reason": "extra_actual_section", "layout_type": "order_details"}]}, "error": null}]};
+
+    const pct = v => (v == null || Number.isNaN(v) ? 'N/A' : (v * 100).toFixed(1) + '%');
+    const fmt = n => Number(n || 0).toLocaleString();
+    const sec = (v, llmOnly = false) => {
+      const val = llmOnly ? (v?.llm_seconds ?? 0) : (v?.elapsed_seconds ?? 0);
+      return val > 0 ? val.toFixed(1) + 's' : '—';
+    };
+
+    function byModel(label) {
+      return DATA.results.filter(r => r.model_label === label && r.success && r.accuracy);
+    }
+
+    function byCase(name) {
+      const g41 = DATA.results.find(r => r.case_name === name && r.model_label === 'gpt-4.1');
+      const g55 = DATA.results.find(r => r.case_name === name && r.model_label === 'gpt-5.5');
+      return { g41, g55 };
+    }
+
+    function avg(rows, fn) {
+      if (!rows.length) return 0;
+      return rows.reduce((s, r) => s + fn(r), 0) / rows.length;
+    }
+
+    function hasTiming() {
+      return DATA.results.some(r => (r.elapsed_seconds || 0) > 0);
+    }
+
+    function hasTokens() {
+      return DATA.results.some(r => (r.usage?.total_tokens || 0) > 0);
+    }
+
+    // Meta
+    document.getElementById('meta').innerHTML = `
+      <dt>Generated</dt><dd>${DATA.generated}</dd>
+      <dt>Cases</dt><dd>${DATA.cases.length} PDFs · ${DATA.results.length} runs</dd>
+      <dt>Scoring</dt><dd>Model-neutral</dd>
+      <dt>Models</dt><dd>${DATA.models.map(m => m.label).join(' vs ')}</dd>
+    `;
+    document.getElementById('footer-ts').textContent = DATA.generated;
+
+    // Verdict
+    const r41 = byModel('gpt-4.1');
+    const r55 = byModel('gpt-5.5');
+    const s41 = avg(r41, r => r.accuracy.overall_score);
+    const s55 = avg(r55, r => r.accuracy.overall_score);
+    const lead = s41 >= s55 ? 'gpt-4.1' : 'gpt-5.5';
+    const leadScore = Math.max(s41, s55);
+    const delta = s55 - s41;
+    const t41 = avg(r41, r => r.elapsed_seconds);
+    const t55 = avg(r55, r => r.elapsed_seconds);
+    const llm41 = avg(r41, r => r.llm_seconds || 0);
+    const llm55 = avg(r55, r => r.llm_seconds || 0);
+    const tok41 = avg(r41, r => r.usage.total_tokens);
+    const tok55 = avg(r55, r => r.usage.total_tokens);
+    const timingNote = hasTiming()
+      ? `End-to-end <strong>${t55.toFixed(1)}s</strong> vs <strong>${t41.toFixed(1)}s</strong> (LLM only: <strong>${llm55.toFixed(1)}s</strong> vs <strong>${llm41.toFixed(1)}s</strong>).`
+      : '';
+    const tokenNote = hasTokens()
+      ? ` Tokens: <strong>${fmt(Math.round(tok55))}</strong> vs <strong>${fmt(Math.round(tok41))}</strong> avg total.`
+      : '';
+
+    document.getElementById('verdict').innerHTML = `
+      <div class="callout-score">${pct(leadScore)}<small>avg · ${lead}</small></div>
+      <div>
+        <h2>${Math.abs(delta) < 0.01 ? 'Models are tied on unbiased accuracy' : lead + ' leads on unbiased accuracy'}</h2>
+        <p>
+          GPT-4.1 averages <strong>${pct(s41)}</strong> vs GPT-5.5 at <strong>${pct(s55)}</strong>
+          (${delta >= 0 ? '+' : ''}${pct(delta)} delta).
+          Legacy index-aligned scores: <strong>${pct(avg(r41, r => r.accuracy.legacy_index_aligned_score))}</strong> vs <strong>${pct(avg(r55, r => r.accuracy.legacy_index_aligned_score))}</strong>.
+          ${timingNote}${tokenNote}
+        </p>
+        <div class="tags">
+          <span class="tag good">unbiased scoring</span>
+          <span class="tag">${lead} accuracy lead</span>
+          <span class="tag">temperature 0 (4.1)</span>
+          ${hasTokens() ? '<span class="tag">' + fmt(Math.round(tok55 - tok41)) + ' token delta</span>' : ''}
+        </div>
+      </div>
+    `;
+
+    // Model cards
+    document.getElementById('models').innerHTML = DATA.models.map((m, i) => {
+      const rows = byModel(m.label);
+      const score = avg(rows, r => r.accuracy.overall_score);
+      const legacy = avg(rows, r => r.accuracy.legacy_index_aligned_score);
+      const isLead = m.label === lead;
+      return `
+        <article class="model-card ${isLead ? 'lead' : ''}" style="animation-delay:${i * 0.06}s">
+          <h3>${m.label}</h3>
+          <div class="model-id">${m.id}</div>
+          <div class="stats">
+            <div class="stat"><div class="stat-k">Score</div><div class="stat-v">${pct(score)}</div></div>
+            <div class="stat"><div class="stat-k">Legacy</div><div class="stat-v">${pct(legacy)}</div></div>
+            <div class="stat"><div class="stat-k">Avg time</div><div class="stat-v">${hasTiming() ? avg(rows, r => r.elapsed_seconds).toFixed(1) + 's' : '—'}</div></div>
+            <div class="stat"><div class="stat-k">Avg tokens</div><div class="stat-v">${hasTokens() ? fmt(Math.round(avg(rows, r => r.usage.total_tokens))) : '—'}</div></div>
+            <div class="stat"><div class="stat-k">In tokens</div><div class="stat-v">${hasTokens() ? fmt(Math.round(avg(rows, r => r.usage.input_tokens))) : '—'}</div></div>
+            <div class="stat"><div class="stat-k">Out tokens</div><div class="stat-v">${hasTokens() ? fmt(Math.round(avg(rows, r => r.usage.output_tokens))) : '—'}</div></div>
+            <div class="stat"><div class="stat-k">LLM time</div><div class="stat-v">${hasTiming() ? avg(rows, r => r.llm_seconds || 0).toFixed(1) + 's' : '—'}</div></div>
+            <div class="stat"><div class="stat-k">Cases</div><div class="stat-v">${rows.length}/${DATA.cases.length}</div></div>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    // Charts
+    const caseNames = DATA.cases.map(c => c.name);
+    const maxScore = 1;
+    const maxTime = Math.max(...caseNames.flatMap(c => {
+      const { g41, g55 } = byCase(c);
+      return [g41?.elapsed_seconds || 0, g55?.elapsed_seconds || 0];
+    }), 0.1);
+    const maxTok = Math.max(...caseNames.flatMap(c => {
+      const { g41, g55 } = byCase(c);
+      return [g41?.usage?.total_tokens || 0, g55?.usage?.total_tokens || 0];
+    }), 1);
+
+    function barLines(caseName, getter, maxVal, mode) {
+      const { g41, g55 } = byCase(caseName);
+      const v41 = g41 ? getter(g41) : 0;
+      const v55 = g55 ? getter(g55) : 0;
+      const fmtVal = (v) => {
+        if (mode === 'pct') return pct(v);
+        if (mode === 'tok') return fmt(Math.round(v));
+        return v > 0 ? v.toFixed(1) + 's' : '—';
+      };
+      return `
+        <div class="bar-group">
+          <div class="bar-case">${caseName}</div>
+          <div class="bar-line"><span>4.1</span><div class="bar-track"><div class="bar-fill m41" data-w="${maxVal ? (v41/maxVal*100).toFixed(1) : 0}%"></div></div><span>${fmtVal(v41)}</span></div>
+          <div class="bar-line"><span>5.5</span><div class="bar-track"><div class="bar-fill m55" data-w="${maxVal ? (v55/maxVal*100).toFixed(1) : 0}%"></div></div><span>${fmtVal(v55)}</span></div>
+        </div>
+      `;
+    }
+
+    document.getElementById('charts').innerHTML = `
+      <div class="chart-panel">
+        <h3>Overall score</h3>
+        ${caseNames.map(c => barLines(c, r => r.accuracy?.overall_score || 0, maxScore, 'pct')).join('')}
+      </div>
+      <div class="chart-panel">
+        <h3>End-to-end time</h3>
+        ${caseNames.map(c => barLines(c, r => r.elapsed_seconds || 0, maxTime, 'sec')).join('')}
+      </div>
+      <div class="chart-panel">
+        <h3>Total tokens</h3>
+        ${caseNames.map(c => barLines(c, r => r.usage?.total_tokens || 0, maxTok, 'tok')).join('')}
+      </div>
+    `;
+
+    // Head-to-head table
+    document.getElementById('h2h-body').innerHTML = caseNames.map(c => {
+      const { g41, g55 } = byCase(c);
+      const cat = DATA.cases.find(x => x.name === c)?.category || '';
+      const pill = cat === 'agriculture' ? 'ag' : 'mt';
+      const a41 = g41?.accuracy?.overall_score;
+      const a55 = g55?.accuracy?.overall_score;
+      const d = (a41 != null && a55 != null) ? a55 - a41 : null;
+      const tokD = (g41?.usage?.total_tokens || 0) - (g55?.usage?.total_tokens || 0);
+      return `<tr>
+        <td><strong>${c}</strong></td>
+        <td><span class="pill ${pill}">${cat}</span></td>
+        <td class="${a41 >= a55 ? 'best' : ''}">${pct(a41)}</td>
+        <td class="${a55 > a41 ? 'best' : ''}">${pct(a55)}</td>
+        <td>${d != null ? (d >= 0 ? '+' : '') + pct(d) : 'N/A'}</td>
+        <td>${pct(g41?.accuracy?.legacy_index_aligned_score)}</td>
+        <td>${pct(g55?.accuracy?.legacy_index_aligned_score)}</td>
+        <td>${sec(g41)}</td>
+        <td>${sec(g55)}</td>
+        <td>${hasTokens() ? (tokD <= 0 ? '+' : '') + fmt(Math.abs((g55?.usage?.total_tokens||0)-(g41?.usage?.total_tokens||0))) : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    // Case cards
+    document.getElementById('cases').innerHTML = caseNames.map((c, i) => {
+      const { g41, g55 } = byCase(c);
+      if (!g41?.accuracy || !g55?.accuracy) return '';
+      const cat = g41.template_category;
+      const d = g55.accuracy.overall_score - g41.accuracy.overall_score;
+      const deltaClass = Math.abs(d) < 0.01 ? 'tie' : d > 0 ? 'win55' : 'win41';
+      const metrics = [
+        ['layout_multiset_score', 'Layout'],
+        ['section_match_score', 'Match'],
+        ['fields_f1', 'Fields'],
+        ['variables_f1', 'Vars'],
+        ['column_headers_f1', 'Cols'],
+      ];
+
+      return `
+        <article class="case-card" style="animation-delay:${i * 0.05}s">
+          <div class="case-top">
+            <div>
+              <div class="case-name">${c}</div>
+              <span class="pill ${cat === 'agriculture' ? 'ag' : 'mt'}">${cat}</span>
+            </div>
+            <div class="delta ${deltaClass}">${d >= 0 ? '+' : ''}${pct(d)} 5.5</div>
+          </div>
+          <div class="case-body">
+            <div class="dual">
+              <div class="dual-col m41">
+                <h4>gpt-4.1</h4>
+                <div class="score-big">${pct(g41.accuracy.overall_score)}</div>
+                <div class="sub-stats">
+                  legacy ${pct(g41.accuracy.legacy_index_aligned_score)}<br>
+                  ${g41.accuracy.matched_sections}/${g41.accuracy.section_count_expected} matched<br>
+                  ${sec(g41)} total · LLM ${sec(g41, true)}<br>
+                  ${fmt(g41.usage.input_tokens)} in · ${fmt(g41.usage.output_tokens)} out
+                </div>
+              </div>
+              <div class="dual-col m55">
+                <h4>gpt-5.5</h4>
+                <div class="score-big">${pct(g55.accuracy.overall_score)}</div>
+                <div class="sub-stats">
+                  legacy ${pct(g55.accuracy.legacy_index_aligned_score)}<br>
+                  ${g55.accuracy.matched_sections}/${g55.accuracy.section_count_expected} matched<br>
+                  ${sec(g55)} total · LLM ${sec(g55, true)}<br>
+                  ${fmt(g55.usage.input_tokens)} in · ${fmt(g55.usage.output_tokens)} out
+                </div>
+              </div>
+            </div>
+            <div class="metric-rows">
+              ${metrics.map(([key, label]) => `
+                <div class="metric-row">
+                  <span>${label}</span>
+                  <div class="metric-track">
+                    <div class="metric-fill m41" data-w="${((g41.accuracy[key]||0)*100).toFixed(0)}%"></div>
+                    <div class="metric-fill m55" data-w="${((g55.accuracy[key]||0)*100).toFixed(0)}%"></div>
+                  </div>
+                  <span>${pct(g41.accuracy[key])} / ${pct(g55.accuracy[key])}</span>
+                </div>
+              `).join('')}
+            </div>
+            <button class="toggle" onclick="toggleDetail('${c}', this)">▸ Low-confidence matches</button>
+            <div class="detail" id="detail-${c}"></div>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    window.toggleDetail = function(name, btn) {
+      const el = document.getElementById('detail-' + name);
+      const open = el.classList.toggle('open');
+      btn.textContent = (open ? '▾ ' : '▸ ') + 'Low-confidence matches';
+      if (open && !el.dataset.loaded) {
+        const parts = [];
+        for (const label of ['gpt-4.1', 'gpt-5.5']) {
+          const r = DATA.results.find(x => x.case_name === name && x.model_label === label);
+          if (r?.accuracy?.section_mismatches?.length) {
+            parts.push('[' + label + ']\n' + JSON.stringify(r.accuracy.section_mismatches, null, 2));
+          }
+        }
+        el.textContent = parts.join('\n\n') || 'No significant mismatches.';
+        el.dataset.loaded = '1';
+      }
+    };
+
+    // Full results table
+    document.getElementById('table-body').innerHTML = DATA.results.map(r => {
+      if (!r.success || !r.accuracy) {
+        return `<tr><td colspan="15">FAILED: ${r.case_name} / ${r.model_label} — ${r.error || 'unknown'}</td></tr>`;
+      }
+      const a = r.accuracy;
+      const { g41, g55 } = byCase(r.case_name);
+      const other = r.model_label === 'gpt-4.1' ? g55 : g41;
+      const isBest = r.accuracy.overall_score >= (other?.accuracy?.overall_score ?? 0);
+      const pill = r.template_category === 'agriculture' ? 'ag' : 'mt';
+      return `<tr>
+        <td><strong>${r.case_name}</strong></td>
+        <td><span class="pill ${pill}">${r.template_category}</span></td>
+        <td>${r.model_label}</td>
+        <td class="${isBest ? 'best' : ''}"><strong>${pct(a.overall_score)}</strong></td>
+        <td>${pct(a.legacy_index_aligned_score)}</td>
+        <td>${pct(a.layout_multiset_score)}</td>
+        <td>${pct(a.section_match_score)}</td>
+        <td>${pct(a.fields_f1)}</td>
+        <td>${pct(a.variables_f1)}</td>
+        <td>${pct(a.column_headers_f1)}</td>
+        <td>${a.matched_sections}/${a.section_count_expected}</td>
+        <td>${sec(r)}</td>
+        <td>${sec(r, true)}</td>
+        <td>${hasTokens() ? fmt(r.usage.input_tokens) : '—'}</td>
+        <td>${hasTokens() ? fmt(r.usage.output_tokens) : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    const w = [
+      {p:5,c:'#8a8478'},{p:15,c:'#c43b2a'},{p:30,c:'#1a1814'},
+      {p:25,c:'#4a463c'},{p:15,c:'#2a5f8f'},{p:5,c:'#2d6a4f'},{p:5,c:'#d4cec2'},
+    ];
+    document.getElementById('weights').innerHTML = w.map(x =>
+      `<div style="flex:${x.p};background:${x.c}" title="${x.p}%"></div>`
+    ).join('');
+
+    requestAnimationFrame(() => setTimeout(() => {
+      document.querySelectorAll('[data-w]').forEach(el => { el.style.width = el.dataset.w; });
+    }, 150));
+  </script>
+</body>
+</html>
